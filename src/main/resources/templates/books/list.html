@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Browse Books - BookStore</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body{background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh}
+  .card{border:none;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+  .container-narrow{max-width:960px}
+  .navbar{background:linear-gradient(135deg,#667eea,#764ba2)!important}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/" th:href="@{/}"><i class="fas fa-book-open me-2"></i>BookStore</a>
+    <div class="navbar-nav ms-auto">
+      <a class="nav-link" href="/books" th:href="@{/books}">Books</a>
+      <a class="nav-link" href="/user/cart" th:href="@{/user/cart}" sec:authorize="isAuthenticated()">Cart</a>
+      <a class="nav-link" href="/login" th:href="@{/login}" sec:authorize="!isAuthenticated()">Login</a>
+      <a class="nav-link" href="/user/dashboard" th:href="@{/user/dashboard}" sec:authorize="hasRole('USER')">Dashboard</a>
+      <a class="nav-link" href="/admin/dashboard" th:href="@{/admin/dashboard}" sec:authorize="hasRole('ADMIN')">Admin</a>
+      <form th:action="@{/logout}" method="post" class="ms-2" sec:authorize="isAuthenticated()">
+        <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-sign-out-alt me-1"></i>Logout</button>
+      </form>
+    </div>
+  </div>
+</nav>
+<div class="container mt-3">
+  <a href="javascript:history.back()" class="text-white text-decoration-none d-inline-flex align-items-center">
+    <i class="fas fa-arrow-left me-2"></i><span style="font-size:1.1rem">Back</span>
+  </a>
+</div>
+<div class="container-fluid px-3">
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <form class="row g-3" method="get">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input class="form-control" name="search" th:value="${searchQuery}" placeholder="Search by title, author, or ISBN...">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="category">
+            <option value="">All Categories</option>
+            <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c.name() == selectedCategory}">Category</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary w-100" type="submit">
+            <i class="fas fa-filter me-2"></i>Filter
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-4" th:if="${books != null and !books.empty}">
+    <div class="col-lg-3 col-md-4 col-sm-6" th:each="b : ${books}">
+      <div class="card h-100 shadow-sm">
+        <img th:src="${b.imageUrl}" class="card-img-top" style="height:280px;object-fit:cover" data-cover-fallback>
+        <div class="card-body d-flex flex-column">
+          <span class="badge bg-primary mb-2 align-self-start" th:text="${b.category}">Category</span>
+          <h6 class="card-title" th:text="${b.title}">Title</h6>
+          <small class="text-muted mb-2" th:text="${'by ' + b.author}">Author</small>
+          <p class="card-text small text-muted" th:text="${b.description}" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Description</p>
+          <div class="mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold text-success fs-5" th:text="${'₹' + b.price}">₹0.00</span>
+              <span class="badge" th:classappend="${b.inStock} ? 'bg-success' : 'bg-danger'" th:text="${b.inStock} ? 'In Stock' : 'Out of Stock'">Stock</span>
+            </div>
+            <a class="btn btn-primary w-100" th:href="@{/books/{id}(id=${b.id})}">
+              <i class="fas fa-eye me-2"></i>View Details
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${books == null or books.empty}" class="text-center py-5">
+    <div class="card">
+      <div class="card-body py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No books found</h4>
+        <p class="text-muted">Try adjusting your search or browse all categories</p>
+        <a class="btn btn-primary" th:href="@{/books}">View All Books</a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const COVERS=[
+ 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800',
+ 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800',
+ 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=800',
+ 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800',
+ 'https://images.unsplash.com/photo-1544937950-fa07a98d237f?w=800',
+ 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800',
+ 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
+ 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+ 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=800'
+];
+function rnd(){return COVERS[Math.floor(Math.random()*COVERS.length)]}
+window.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('img[data-cover-fallback]').forEach(img=>{
+    if(!img.getAttribute('src')||img.getAttribute('src')===''){img.setAttribute('src',rnd());}
+    img.onerror=()=>img.setAttribute('src',rnd());
+  });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

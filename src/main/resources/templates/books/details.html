@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Book Details - BookStore</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body{background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh}
+  .card{border:none;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+  .container-narrow{max-width:960px}
+  .navbar{background:linear-gradient(135deg,#667eea,#764ba2)!important}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/" th:href="@{/}"><i class="fas fa-book-open me-2"></i>BookStore</a>
+    <div class="navbar-nav ms-auto">
+      <a class="nav-link" href="/books" th:href="@{/books}">Books</a>
+      <a class="nav-link" href="/user/cart" th:href="@{/user/cart}" sec:authorize="isAuthenticated()">Cart</a>
+      <a class="nav-link" href="/login" th:href="@{/login}" sec:authorize="!isAuthenticated()">Login</a>
+      <a class="nav-link" href="/user/dashboard" th:href="@{/user/dashboard}" sec:authorize="hasRole('USER')">Dashboard</a>
+      <a class="nav-link" href="/admin/dashboard" th:href="@{/admin/dashboard}" sec:authorize="hasRole('ADMIN')">Admin</a>
+      <form th:action="@{/logout}" method="post" class="ms-2" sec:authorize="isAuthenticated()">
+        <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-sign-out-alt me-1"></i>Logout</button>
+      </form>
+    </div>
+  </div>
+</nav>
+<div class="container mt-3">
+  <a href="javascript:history.back()" class="text-white text-decoration-none d-inline-flex align-items-center">
+    <i class="fas fa-arrow-left me-2"></i><span style="font-size:1.1rem">Back</span>
+  </a>
+</div>
+<div class="container-fluid px-3">
+
+<div class="container py-4">
+  <div th:if="${book != null}">
+    <div class="row g-4 mb-5">
+      <div class="col-md-5">
+        <div class="text-center">
+          <img th:src="${book.imageUrl}" class="img-fluid rounded shadow-lg" style="max-height:500px;width:100%;object-fit:cover" data-cover-fallback>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-body p-4">
+            <span class="badge bg-primary mb-3" th:text="${book.category}">Category</span>
+            <h1 class="card-title mb-3" th:text="${book.title}">Book Title</h1>
+            <p class="text-muted mb-3"><i class="fas fa-user me-2"></i>by <span th:text="${book.author}">Author</span></p>
+
+            <div class="row mb-3">
+              <div class="col-6"><strong>ISBN:</strong> <span th:text="${book.isbn}">ISBN</span></div>
+              <div class="col-6"><strong>Publisher:</strong> <span th:text="${book.publisher ?: 'N/A'}">Publisher</span></div>
+              <div class="col-6"><strong>Year:</strong> <span th:text="${book.publicationYear ?: 'N/A'}">Year</span></div>
+              <div class="col-6"><strong>Pages:</strong> <span th:text="${book.pages ?: 'N/A'}">Pages</span></div>
+            </div>
+
+            <p class="card-text mb-4" th:text="${book.description}">Book description goes here...</p>
+
+            <div class="row align-items-center mb-4">
+              <div class="col-6">
+                <h3 class="text-success mb-0" th:text="${'₹' + book.price}">₹0.00</h3>
+              </div>
+              <div class="col-6 text-end">
+                <span class="badge fs-6" th:classappend="${book.inStock} ? 'bg-success' : 'bg-danger'">
+                  <span th:text="${book.inStock} ? ('Stock: ' + book.stockQuantity) : 'Out of Stock'">Stock Status</span>
+                </span>
+              </div>
+            </div>
+
+            <form th:action="@{/user/cart/add}" method="post" th:if="${book.inStock}" sec:authorize="isAuthenticated()">
+              <input type="hidden" name="bookId" th:value="${book.id}">
+              <div class="row g-2">
+                <div class="col-4">
+                  <label class="form-label small">Quantity</label>
+                  <input class="form-control" type="number" name="quantity" value="1" min="1" th:max="${book.stockQuantity}">
+                </div>
+                <div class="col-8 d-flex align-items-end">
+                  <button class="btn btn-success btn-lg w-100" type="submit">
+                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <div th:if="${!book.inStock}" class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>This book is currently out of stock
+            </div>
+
+            <div sec:authorize="!isAuthenticated()" class="text-center">
+              <a class="btn btn-primary btn-lg" th:href="@{/login}">
+                <i class="fas fa-sign-in-alt me-2"></i>Login to Purchase
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Books -->
+    <div th:if="${relatedBooks != null and !relatedBooks.empty}">
+      <h4 class="text-white mb-4"><i class="fas fa-bookmark me-2"></i>Related Books</h4>
+      <div class="row g-4">
+        <div class="col-lg-3 col-md-4 col-sm-6" th:each="rb : ${relatedBooks}">
+          <div class="card h-100">
+            <img th:src="${rb.imageUrl}" class="card-img-top" style="height:200px;object-fit:cover" data-cover-fallback>
+            <div class="card-body">
+              <h6 class="card-title" th:text="${rb.title}">Title</h6>
+              <small class="text-muted" th:text="${'by ' + rb.author}">Author</small>
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <span class="fw-bold text-success" th:text="${'₹' + rb.price}">₹0.00</span>
+                <a class="btn btn-sm btn-outline-primary" th:href="@{/books/{id}(id=${rb.id})}">View</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const COVERS=[
+ 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800',
+ 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800',
+ 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=800',
+ 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800',
+ 'https://images.unsplash.com/photo-1544937950-fa07a98d237f?w=800',
+ 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800',
+ 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
+ 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+ 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=800'
+];
+function rnd(){return COVERS[Math.floor(Math.random()*COVERS.length)]}
+window.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('img[data-cover-fallback]').forEach(img=>{
+    if(!img.getAttribute('src')||img.getAttribute('src')===''){img.setAttribute('src',rnd());}
+    img.onerror=()=>img.setAttribute('src',rnd());
+  });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
