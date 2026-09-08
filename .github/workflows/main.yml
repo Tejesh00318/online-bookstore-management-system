@@ -38,5 +38,5 @@ jobs:
           push: true
           # Replace 'your-dockerhub-repo' with your actual Docker Hub repository namespace/name
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/Online-book-store-cicd:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/Online-book-store-cicd:${{ github.sha }}
