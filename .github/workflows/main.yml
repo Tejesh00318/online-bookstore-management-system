@@ -1,42 +1,77 @@
-name: Build and Push Docker Image
+name: Test, Build, and Push Docker Image
 
 on:
   push:
     branches:
-      - main  # Triggers the pipeline on every push to the main branch
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Secure the workflow by limiting token permissions
+permissions:
+  contents: read
 
 jobs:
-  build-and-push:
+  # ==================== STAGE 1: RUN TESTS ====================
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Check out the repository code into the runner
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      # 2. Set up QEMU (Optional: useful for multi-platform builds like amd64/arm64)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Test Suite
+        run: npm test
+
+  # ==================== STAGE 2: BUILD & PUSH ====================
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # 3. Set up Docker Buildx (Enables advanced build capabilities)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 4. Log in to Docker Hub using the secrets configured earlier
+      # 🌟 Improvement 3: Auto-generate tags and labels based on Git actions
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 5. Build the image from your Dockerfile and push it to Docker Hub
+      # 🌟 Improvements 1 & 3: Added layer caching and dynamic tags
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          # Replace 'your-dockerhub-repo' with your actual Docker Hub repository namespace/name
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo:${{ github.sha }}
+          tags: ${{ id.meta.outputs.tags }}
+          labels: ${{ id.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
