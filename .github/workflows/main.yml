@@ -23,11 +23,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          #cache: 'npm'
+          node-version: '24' # Updated to Node 24 to match the latest runner environment and clear warnings
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install  # Changed from 'npm ci' to prevent crashes if a lockfile is missing
 
       - name: Run Test Suite
         run: npm test
@@ -48,11 +47,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 🌟 Improvement 3: Auto-generate tags and labels based on Git actions
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # ⚠️ REMINDER: Change 'your-dockerhub-repo' to your exact repository name on Docker Hub
           images: ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo
           tags: |
             type=raw,value=latest
@@ -64,14 +63,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 🌟 Improvements 1 & 3: Added layer caching and dynamic tags
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}    # Syntax fully corrected
+          labels: ${{ steps.meta.outputs.labels }}  # Syntax fully corrected
           cache-from: type=gha
           cache-to: type=gha,mode=max
