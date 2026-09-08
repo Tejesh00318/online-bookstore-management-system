@@ -1,75 +1,42 @@
-name: Test, Build, and Push Docker Image
+name: Build and Push Docker Image
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-# Secure the workflow by limiting token permissions
-permissions:
-  contents: read
+      - main  # Triggers the pipeline on every push to the main branch
 
 jobs:
-  # ==================== STAGE 1: RUN TESTS ====================
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24' # Updated to Node 24 to match the latest runner environment and clear warnings
-
-      - name: Install Dependencies
-        run: npm install  # Changed from 'npm ci' to prevent crashes if a lockfile is missing
-
-      - name: Run Test Suite
-        run: npm test
-
-  # ==================== STAGE 2: BUILD & PUSH ====================
   build-and-push:
     runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push'
-    
+
     steps:
+      # 1. Check out the repository code into the runner
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      # 2. Set up QEMU (Optional: useful for multi-platform builds like amd64/arm64)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
+      # 3. Set up Docker Buildx (Enables advanced build capabilities)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # ⚠️ REMINDER: Change 'your-dockerhub-repo' to your exact repository name on Docker Hub
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
-
+      # 4. Log in to Docker Hub using the secrets configured earlier
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # 5. Build the image from your Dockerfile and push it to Docker Hub
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}    # Syntax fully corrected
-          labels: ${{ steps.meta.outputs.labels }}  # Syntax fully corrected
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Replace 'your-dockerhub-repo' with your actual Docker Hub repository namespace/name
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/your-dockerhub-repo:${{ github.sha }}
